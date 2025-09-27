@@ -29,9 +29,9 @@ async def root():
         <style>
             body { font-family: Arial, sans-serif; margin: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
             .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            h1 { colour: #333; text-align: center; margin-bottom: 30px; }
+            h1 { color: #333; text-align: center; margin-bottom: 30px; }
             textarea { width: 100%; height: 120px; margin: 10px 0; padding: 10px; border: 2px solid #ddd; border-radius: 5px; }
-            button { background: #667eea; colour: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+            button { background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; }
             button:hover { background: #5a67d8; }
             .result { margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 5px; }
             .symbol img { max-width: 300px; border: 2px solid #ddd; border-radius: 10px; }
