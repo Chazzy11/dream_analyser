@@ -1,0 +1,1 @@
+"""Tests for the Dream Interpreter application."""
