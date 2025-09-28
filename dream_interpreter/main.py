@@ -1,15 +1,17 @@
+from datetime import datetime
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
-from datetime import datetime
-from .models import DreamInput, DreamRecord, SymbolResponse
+
 from .analyser import Dreamanalyser
-from .symbol_generator import SymbolGenerator
 from .database import DreamDatabase
+from .models import DreamInput, DreamRecord, SymbolResponse
+from .symbol_generator import SymbolGenerator
 
 app = FastAPI(
     title="Dream Interpreter API",
     description="AI-powered dream interpretation with symbolic visualization",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 # Initialize components
@@ -21,7 +23,7 @@ database = DreamDatabase()
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """Serve a simple web interface."""
-    html_content = '''
+    html_content = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -134,7 +136,7 @@ async def root():
         </script>
     </body>
     </html>
-    '''
+    """
     return html_content
 
 
@@ -144,21 +146,21 @@ async def analyze_dream(dream_input: DreamInput):
     try:
         # Analyze the dream
         analysis = analyser.analyze_dream(dream_input.dream_text)
-        
+
         # Create and store dream record
         dream_record = DreamRecord(
             id="",  # Will be set by database
             dream_text=dream_input.dream_text,
             user_id=dream_input.user_id,
             analysis=analysis,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
-        
+
         dream_id = database.store_dream(dream_record)
         dream_record.id = dream_id
-        
+
         return dream_record
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing dream: {str(e)}")
 
@@ -169,25 +171,27 @@ async def generate_symbol(user_id: str) -> SymbolResponse:
     try:
         user_dreams = database.get_user_dreams(user_id)
         symbol_base64 = symbol_generator.generate_symbol(user_dreams)
-        
+
         # Get average coordinates for the latest position
         if user_dreams:
             latest_dream = user_dreams[-1]
             coordinates = (
                 latest_dream.analysis.static_dynamic_score,
-                latest_dream.analysis.upper_downer_score
+                latest_dream.analysis.upper_downer_score,
             )
         else:
             coordinates = (0.0, 0.0)
-        
+
         return SymbolResponse(
             symbol_base64=symbol_base64,
             dream_count=len(user_dreams),
-            coordinates=coordinates
+            coordinates=coordinates,
         )
-        
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating symbol: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error generating symbol: {str(e)}"
+        )
 
 
 @app.get("/user-stats/{user_id}")
@@ -197,7 +201,9 @@ async def get_user_stats(user_id: str):
         stats = database.get_user_stats(user_id)
         return stats
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching user stats: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching user stats: {str(e)}"
+        )
 
 
 @app.get("/dream/{dream_id}")
@@ -211,4 +217,5 @@ async def get_dream(dream_id: str):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

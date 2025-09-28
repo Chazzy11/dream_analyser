@@ -1,24 +1,28 @@
-import pytest
 from datetime import datetime
+
+import pytest
+
+from dream_interpreter.models import DreamAnalysis, DreamRecord
 from dream_interpreter.symbol_generator import SymbolGenerator
-from dream_interpreter.models import DreamRecord, DreamAnalysis
 
 
 class TestSymbolGenerator:
     """Test cases for the SymbolGenerator class."""
-    
+
     def setup_method(self):
         """Set up test fixtures."""
         self.generator = SymbolGenerator()
-    
+
     def test_base_symbol_generation(self):
         """Test generation of base symbol for new users."""
         symbol_base64 = self.generator.generate_symbol([])
-        
+
         assert symbol_base64 is not None
         assert len(symbol_base64) > 0
-        assert symbol_base64.replace('+', '').replace('/', '').replace('=', '').isalnum()
-    
+        assert (
+            symbol_base64.replace("+", "").replace("/", "").replace("=", "").isalnum()
+        )
+
     def test_single_dream_symbol(self):
         """Test symbol generation with a single dream."""
         dream = DreamRecord(
@@ -29,16 +33,16 @@ class TestSymbolGenerator:
                 upper_downer_score=0.8,
                 static_dynamic_score=0.6,
                 confidence=0.9,
-                keywords=["flying", "happy"]
+                keywords=["flying", "happy"],
             ),
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
-        
+
         symbol_base64 = self.generator.generate_symbol([dream])
-        
+
         assert symbol_base64 is not None
         assert len(symbol_base64) > 0
-    
+
     def test_multiple_dreams_symbol(self):
         """Test symbol generation with multiple dreams."""
         dreams = []
@@ -51,23 +55,23 @@ class TestSymbolGenerator:
                     upper_downer_score=0.2 * i - 0.4,  # Range from -0.4 to 0.4
                     static_dynamic_score=0.1 * i - 0.2,  # Range from -0.2 to 0.2
                     confidence=0.8,
-                    keywords=[f"keyword{i}"]
+                    keywords=[f"keyword{i}"],
                 ),
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
             dreams.append(dream)
-        
+
         symbol_base64 = self.generator.generate_symbol(dreams)
-        
+
         assert symbol_base64 is not None
         assert len(symbol_base64) > 0
-    
+
     def test_color_selection(self):
         """Test that color selection works correctly."""
         # Test upper-right quadrant (positive, dynamic)
         color = self.generator._get_primary_color(0.5, 0.5)
-        assert color in self.generator.colors['upper']
-        
+        assert color in self.generator.colors["upper"]
+
         # Test lower-left quadrant (negative, static)
         color = self.generator._get_primary_color(-0.5, -0.5)
-        assert color in self.generator.colors['downer']
+        assert color in self.generator.colors["downer"]

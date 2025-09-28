@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dream-interpreter"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI-powered dream interpretation with symbolic visualisation"
 authors = ["Charlotte Rogers <132924201+Chazzy11@users.noreply.github.com>"]
 readme = "README.md"
@@ -23,6 +23,7 @@ black = "^23.0.0"
 httpx = "^0.25.0"
 pylint = "^3.3.8"
 isort = "^6.0.1"
+pytest-cov = "^7.0.0"
 
 [tool.black]
 line-length = 88
