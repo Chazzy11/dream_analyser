@@ -4,7 +4,7 @@ matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from PIL import Image
+from PIL import Image as PILImage, ImageDraw
 import io
 import base64
 import logging
@@ -179,8 +179,11 @@ class SymbolGenerator:
         try:
             if avg_y > 0.5:  # Very positive
                 # Add a star
-                star = patches.RegularPolygon((0, 0), 5, radius=0.15, facecolor='white', 
-                                            edgecolor='gold', linewidth=2)
+                star = patches.RegularPolygon((0, 0), 5, 
+                                              radius=0.15, 
+                                              facecolor='white', 
+                                              edgecolor='gold', 
+                                              linewidth=2)
                 ax.add_patch(star)
             elif avg_y < -0.5:  # Very negative
                 # Add a darker center
@@ -229,9 +232,8 @@ class SymbolGenerator:
         """Create a simple error symbol when matplotlib fails."""
         try:
             # Create a minimal 100x100 white image with a simple pattern
-            from PIL import Image, ImageDraw
             
-            img = Image.new('RGB', (100, 100), color='white')
+            img = PILImage.new('RGB', (100, 100), color='white')
             draw = ImageDraw.Draw(img)
             
             # Draw a simple circle
