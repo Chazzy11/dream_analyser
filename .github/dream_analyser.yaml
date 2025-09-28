@@ -68,7 +68,6 @@ jobs:
     - name: Install dependencies
       run: |
         poetry install --no-interaction
-        poetry add --group dev pylint isort
 
     - name: Check code formatting with Black
       run: poetry run black --check --diff dream_interpreter/ tests/
