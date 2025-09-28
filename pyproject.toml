@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dream-interpreter"
-version = "0.3.0"
+version = "0.3.1"
 description = "AI-powered dream interpretation with symbolic visualisation"
 authors = ["Charlotte Rogers <132924201+Chazzy11@users.noreply.github.com>"]
 readme = "README.md"
