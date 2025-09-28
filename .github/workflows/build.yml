@@ -11,12 +11,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test:
-    uses: ./.github/workflows/dream_analyser.yml
-
   build:
     runs-on: ubuntu-latest
-    needs: test
     permissions:
       contents: read
       packages: write
@@ -40,7 +36,7 @@ jobs:
         tags: |
           type=ref,event=branch
           type=ref,event=pr
-          type=sha,prefix={{branch}}-
+          type=sha
 
     - name: Build and push
       uses: docker/build-push-action@v5
