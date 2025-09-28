@@ -62,12 +62,12 @@ class TestSymbolGenerator:
         assert symbol_base64 is not None
         assert len(symbol_base64) > 0
     
-    def test_colour_selection(self):
-        """Test that colour selection works correctly."""
+    def test_color_selection(self):
+        """Test that color selection works correctly."""
         # Test upper-right quadrant (positive, dynamic)
-        colour = self.generator._get_primary_colour(0.5, 0.5)
-        assert colour in self.generator.colours['upper']
+        color = self.generator._get_primary_color(0.5, 0.5)
+        assert color in self.generator.colors['upper']
         
         # Test lower-left quadrant (negative, static)
-        colour = self.generator._get_primary_colour(-0.5, -0.5)
-        assert colour in self.generator.colours['downer']
+        color = self.generator._get_primary_color(-0.5, -0.5)
+        assert color in self.generator.colors['downer']
