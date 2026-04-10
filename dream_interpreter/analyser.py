@@ -1,18 +1,121 @@
+"""Dream analysis using either a Claude API call or a legacy rule-based fallback."""
 import re
-from typing import Dict, List, Tuple
+from typing import List
 
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
+import anthropic
 from textblob import TextBlob
 
 from .models import DreamAnalysis
 
+_TOOL_SCHEMA = [
+    {
+        "name": "record_dream_analysis",
+        "description": "Record the structured analysis of a dream.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "upper_downer_score": {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1,
+                    "description": (
+                        "Emotional valence: -1 = deeply negative/fearful, "
+                        "0 = neutral, 1 = joyful/transcendent."
+                    ),
+                },
+                "static_dynamic_score": {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1,
+                    "description": (
+                        "Energy level: -1 = passive/still/observational, "
+                        "0 = mixed, 1 = active/energetic/kinetic."
+                    ),
+                },
+                "confidence": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": (
+                        "How clearly the text expresses emotional and energetic "
+                        "content. Short or ambiguous texts score lower."
+                    ),
+                },
+                "keywords": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "maxItems": 10,
+                    "description": "Up to 10 significant dream elements.",
+                },
+            },
+            "required": [
+                "upper_downer_score",
+                "static_dynamic_score",
+                "confidence",
+                "keywords",
+            ],
+        },
+    }
+]
 
-class Dreamanalyser:
-    """Analyses dreams for emotional and dynamic content."""
+_SYSTEM_PROMPT = (
+    "You are a dream analysis engine. Score the dream on two axes:\n"
+    "- upper_downer_score: float in [-1, 1], where -1 is deeply negative/fearful, "
+    "0 is neutral, 1 is joyful/transcendent.\n"
+    "- static_dynamic_score: float in [-1, 1], where -1 is passive/still/observational, "
+    "0 is mixed, 1 is active/energetic/kinetic.\n"
+    "- confidence: float in [0, 1] reflecting how clearly the text expresses emotional "
+    "and energetic content. Short or ambiguous texts score lower.\n"
+    "- keywords: list of up to 10 significant dream elements (not limited to any "
+    "predefined vocabulary).\n"
+    "Use the provided tool to record your analysis."
+)
+
+
+class LLMDreamanalyser:  # pylint: disable=too-few-public-methods
+    """Analyses dreams using the Claude API for context-aware scoring."""
+
+    def __init__(
+        self,
+        model: str = "claude-haiku-4-5-20251001",
+        anthropic_client: anthropic.AsyncAnthropic = None,
+    ):
+        """Initialise the analyser.
+
+        Args:
+            model: Claude model ID to use for analysis.
+            anthropic_client: Optional pre-built Anthropic client (useful for testing).
+        """
+        self._client = anthropic_client or anthropic.AsyncAnthropic()
+        self._model = model
+
+    async def analyze_dream(self, dream_text: str) -> DreamAnalysis:
+        """Analyse a dream via Claude API tool use and return structured scores.
+
+        Args:
+            dream_text: The raw dream description to analyse.
+
+        Returns:
+            A DreamAnalysis with scores and extracted keywords.
+        """
+        message = await self._client.messages.create(
+            model=self._model,
+            max_tokens=256,
+            temperature=0,
+            system=_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": dream_text}],
+            tools=_TOOL_SCHEMA,
+            tool_choice={"type": "any"},
+        )
+        tool_input = message.content[0].input
+        return DreamAnalysis(**tool_input)
+
+
+class LegacyDreamanalyser:  # pylint: disable=too-few-public-methods
+    """Rule-based dream analyser using TextBlob sentiment and keyword matching."""
 
     def __init__(self):
-        # Predefined word lists for dream analysis
+        """Initialise predefined word sets for scoring."""
         self.upper_words = {
             "flying",
             "soaring",
@@ -107,22 +210,22 @@ class Dreamanalyser:
         }
 
     def analyze_dream(self, dream_text: str) -> DreamAnalysis:
-        """Analyze a dream text and return emotional/dynamic scores."""
-        # Clean and process text
+        """Analyse a dream text and return emotional/dynamic scores.
+
+        Args:
+            dream_text: The raw dream description to analyse.
+
+        Returns:
+            A DreamAnalysis with scores and extracted keywords.
+        """
         cleaned_text = self._clean_text(dream_text)
 
-        # Get sentiment analysis
         blob = TextBlob(cleaned_text)
         sentiment_polarity = blob.sentiment.polarity
 
-        # Calculate scores
         upper_downer = self._calculate_emotional_score(cleaned_text, sentiment_polarity)
         static_dynamic = self._calculate_dynamic_score(cleaned_text)
-
-        # Extract keywords
         keywords = self._extract_keywords(cleaned_text)
-
-        # Calculate confidence based on text length and keyword matches
         confidence = self._calculate_confidence(cleaned_text, keywords)
 
         return DreamAnalysis(
@@ -133,7 +236,7 @@ class Dreamanalyser:
         )
 
     def _clean_text(self, text: str) -> str:
-        """Clean and normalize text."""
+        """Clean and normalise text."""
         text = text.lower()
         text = re.sub(r"[^\w\s]", " ", text)
         text = " ".join(text.split())
@@ -146,15 +249,11 @@ class Dreamanalyser:
         upper_count = len(words & self.upper_words)
         downer_count = len(words & self.downer_words)
 
-        # Combine keyword-based scoring with sentiment analysis
         keyword_score = 0
         if upper_count > 0 or downer_count > 0:
             keyword_score = (upper_count - downer_count) / (upper_count + downer_count)
 
-        # Weight sentiment analysis and keyword matching
         final_score = 0.6 * sentiment + 0.4 * keyword_score
-
-        # Ensure score is within bounds
         return max(-1.0, min(1.0, final_score))
 
     def _calculate_dynamic_score(self, text: str) -> float:
@@ -165,7 +264,6 @@ class Dreamanalyser:
         static_count = len(words & self.static_words)
 
         if dynamic_count == 0 and static_count == 0:
-            # Default to slightly dynamic for most dreams
             return 0.1
 
         total = dynamic_count + static_count
@@ -179,7 +277,6 @@ class Dreamanalyser:
         """Extract key terms from dream text."""
         words = text.split()
 
-        # Find matches with our predefined word sets
         all_keywords = (
             self.upper_words
             | self.downer_words
@@ -188,7 +285,6 @@ class Dreamanalyser:
         )
         found_keywords = [word for word in words if word in all_keywords]
 
-        # Remove duplicates while preserving order
         unique_keywords = []
         seen = set()
         for keyword in found_keywords:
@@ -196,18 +292,19 @@ class Dreamanalyser:
                 unique_keywords.append(keyword)
                 seen.add(keyword)
 
-        return unique_keywords[:10]  # Limit to top 10 keywords
+        return unique_keywords[:10]
 
     def _calculate_confidence(self, text: str, keywords: List[str]) -> float:
         """Calculate confidence in the analysis."""
         text_length = len(text.split())
         keyword_count = len(keywords)
 
-        # Base confidence on text length (more text = higher confidence)
-        length_factor = min(1.0, text_length / 50.0)  # Cap at 50 words
-
-        # Boost confidence based on keyword matches
-        keyword_factor = min(1.0, keyword_count / 5.0)  # Cap at 5 keywords
+        length_factor = min(1.0, text_length / 50.0)
+        keyword_factor = min(1.0, keyword_count / 5.0)
 
         confidence = 0.5 + 0.3 * length_factor + 0.2 * keyword_factor
         return min(1.0, confidence)
+
+
+# Backward-compatibility alias — existing imports of Dreamanalyser still work.
+Dreamanalyser = LegacyDreamanalyser
