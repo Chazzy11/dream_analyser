@@ -47,11 +47,28 @@ class AISymbolGenerator:  # pylint: disable=too-few-public-methods
         if not dreams:
             return self._legacy.generate_symbol(dreams)
 
-        latest = dreams[-1]
+        # Average scores across all dreams so the symbol reflects cumulative history.
+        avg_upper_downer = sum(d.analysis.upper_downer_score for d in dreams) / len(
+            dreams
+        )
+        avg_static_dynamic = sum(d.analysis.static_dynamic_score for d in dreams) / len(
+            dreams
+        )
+
+        # Aggregate keywords most-recent-first so newer dreams take priority in the
+        # 5-keyword prompt slot when the user has many dreams.
+        seen: set = set()
+        all_keywords: List[str] = []
+        for dream in reversed(dreams):
+            for kw in dream.analysis.keywords:
+                if kw not in seen:
+                    seen.add(kw)
+                    all_keywords.append(kw)
+
         prompt = self._build_image_prompt(
-            latest.analysis.keywords,
-            latest.analysis.upper_downer_score,
-            latest.analysis.static_dynamic_score,
+            all_keywords,
+            avg_upper_downer,
+            avg_static_dynamic,
             len(dreams),
         )
 

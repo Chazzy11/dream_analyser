@@ -147,17 +147,21 @@ class TestAISymbolGenerator:
 
     @pytest.mark.asyncio
     async def test_generate_symbol_prompt_contains_keywords(self):
-        """Prompt should include the dream's keywords."""
+        """Prompt should include keywords aggregated across all dreams."""
         mock_create = AsyncMock(return_value=self._make_mock_response())
         self.mock_client.images.generate = mock_create
 
         await self.generator.generate_symbol(
-            [_make_dream(keywords=["labyrinth", "ouroboros"])]
+            [
+                _make_dream(keywords=["labyrinth", "ouroboros"]),
+                _make_dream(keywords=["chrysalis", "mirror"]),
+            ]
         )
 
         prompt = mock_create.call_args.kwargs["prompt"]
-        assert "labyrinth" in prompt
-        assert "ouroboros" in prompt
+        # Most-recent dream's keywords take priority in the 5-keyword slot
+        assert "chrysalis" in prompt
+        assert "mirror" in prompt
 
     @pytest.mark.asyncio
     async def test_generate_symbol_prompt_positive_tone(self):
@@ -201,3 +205,22 @@ class TestAISymbolGenerator:
 
         assert isinstance(result, str)
         assert len(result) > 0
+
+    @pytest.mark.asyncio
+    async def test_generate_symbol_uses_averaged_scores(self):
+        """Scores should be averaged across all dreams, not taken from the last one."""
+        mock_create = AsyncMock(return_value=self._make_mock_response())
+        self.mock_client.images.generate = mock_create
+
+        # Two dreams with opposite tones — average is neutral, not uplifting or melancholic
+        await self.generator.generate_symbol(
+            [
+                _make_dream(upper_downer=0.8),  # very positive
+                _make_dream(upper_downer=-0.8),  # very negative
+            ]
+        )
+
+        prompt = mock_create.call_args.kwargs["prompt"]
+        assert "luminous and uplifting" not in prompt
+        assert "shadowy and melancholic" not in prompt
+        assert "mysterious and neutral" in prompt
