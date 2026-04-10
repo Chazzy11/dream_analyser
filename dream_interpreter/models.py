@@ -9,6 +9,10 @@ class DreamInput(BaseModel):
 
     dream_text: str = Field(..., min_length=10, description="The dream description")
     user_id: Optional[str] = Field(default="anonymous", description="User identifier")
+    mode: str = Field(
+        default="auto",
+        description="Analysis mode: 'auto' (use AI if available), 'ai', or 'legacy'",
+    )
 
 
 class DreamAnalysis(BaseModel):

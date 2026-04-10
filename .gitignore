@@ -40,6 +40,7 @@ Thumbs.db
 # Testing
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 
 # Logs
@@ -47,3 +48,6 @@ htmlcov/
 
 # Local development
 .envrc
+
+# Claude Code
+.claude/
